@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gems & Picks FREE</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --bg: #0f0f0f; --accent: #00d4ff; --text: #ffffff; --card: #1e1e1e; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; text-align: center; overflow: hidden; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+        .stat-box { background: var(--card); padding: 10px; border-radius: 12px; border: 1px solid #333; }
+        .stat-val { display: block; font-size: 1.1rem; font-weight: bold; color: var(--accent); }
+        #mining-zone { height: 200px; display: flex; align-items: center; justify-content: center; font-size: 80px; cursor: pointer; position: relative; }
+        .shop { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        .btn { background: var(--accent); color: #000; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; }
+        .btn:disabled { background: #444; color: #888; }
+        .floating { position: absolute; color: var(--accent); font-weight: bold; animation: up 0.7s ease-out forwards; pointer-events: none; }
+        @keyframes up { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-100px); opacity: 0; } }
+    </style>
+</head>
+<body>
+    <div class="stats-grid">
+        <div class="stat-box">💎<span class="stat-val" id="gems">0</span></div>
+        <div class="stat-box">⛏️<span class="stat-val" id="power">1</span></div>
+        <div class="stat-box">🌱<span class="stat-val" id="passive">0</span>/s</div>
+    </div>
+
+    <div id="mining-zone" onclick="clickMine(event)">💎</div>
+
+    <div class="shop">
+        <button class="btn" id="btn-pick" onclick="buy('pick')">Mejorar Pico (Coste: 50)</button>
+        <button class="btn" id="btn-farm" onclick="buy('farm')">Plantar Gema (Coste: 100)</button>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // Cargar datos guardados o iniciar de cero
+        let data = JSON.parse(localStorage.getItem('gems_save')) || { gems: 0, power: 1, passive: 0, pCost: 50, fCost: 100 };
+
+        function save() { localStorage.setItem('gems_save', JSON.stringify(data)); }
+
+        function update() {
+            document.getElementById('gems').innerText = Math.floor(data.gems);
+            document.getElementById('power').innerText = data.power;
+            document.getElementById('passive').innerText = data.passive;
+            document.getElementById('btn-pick').innerText = `Mejorar Pico (Coste: ${data.pCost})`;
+            document.getElementById('btn-farm').innerText = `Plantar Gema (Coste: ${data.fCost})`;
+            document.getElementById('btn-pick').disabled = data.gems < data.pCost;
+            document.getElementById('btn-farm').disabled = data.gems < data.fCost;
+        }
+
+        function clickMine(e) {
+            data.gems += data.power;
+            showFloat(e.clientX, e.clientY, `+${data.power}`);
+            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            save(); update();
+        }
+
+        function showFloat(x, y, txt) {
+            const el = document.createElement('div');
+            el.className = 'floating'; el.style.left = x+'px'; el.style.top = y+'px';
+            el.innerText = txt; document.body.appendChild(el);
+            setTimeout(() => el.remove(), 700);
+        }
+
+        function buy(type) {
+            if (type === 'pick' && data.gems >= data.pCost) {
+                data.gems -= data.pCost; data.power++; data.pCost *= 2;
+            } else if (type === 'farm' && data.gems >= data.fCost) {
+                data.gems -= data.fCost; data.passive++; data.fCost = Math.floor(data.fCost * 1.5);
+            }
+            save(); update();
+        }
+
+        setInterval(() => { if(data.passive > 0) { data.gems += data.passive; save(); update(); } }, 1000);
+        update();
+    </script>
+</body>
+</html>
